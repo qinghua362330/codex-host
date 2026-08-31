@@ -68,4 +68,23 @@ describe("native Harness configuration discovery", () => {
       "native",
     );
   });
+
+  it("reads Claude's top-level model and local settings file", async () => {
+    const home = await mkdtemp(path.join(os.tmpdir(), "codexhost-native-model-"));
+    await mkdir(path.join(home, ".claude"));
+    await writeFile(
+      path.join(home, ".claude", "settings.local.json"),
+      JSON.stringify({ model: "claude-opus-4-1" }),
+    );
+
+    const result = await discoverNativeHarnessConfiguration("claude-code", { HOME: home });
+    expect(result.summary).toMatchObject({
+      status: "detected",
+      model: "claude-opus-4-1",
+    });
+    expect(result.summary.sources).toContainEqual({
+      kind: "settings-file",
+      path: path.join(home, ".claude", "settings.local.json"),
+    });
+  });
 });

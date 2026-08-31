@@ -173,21 +173,31 @@ export async function discoverNativeHarnessConfiguration(
   if (harnessId !== "claude-code") return makeResult(values);
 
   const home = homeDirectory(environment);
-  const settingsPath = path.join(home, ".claude", "settings.json");
-  try {
-    const settings = await readJson(settingsPath);
-    if (isRecord(settings) && isRecord(settings.env)) {
-      const filtered = Object.fromEntries(
-        Object.entries(settings.env).filter(([key]) => allowedKeys.has(key)),
-      );
-      if (Object.keys(filtered).length > 0) {
-        addEnvironmentValues(values, filtered, { kind: "settings-file", path: settingsPath });
+  for (const settingsPath of [
+    path.join(home, ".claude", "settings.json"),
+    path.join(home, ".claude", "settings.local.json"),
+  ]) {
+    try {
+      const settings = await readJson(settingsPath);
+      if (!isRecord(settings)) continue;
+      if (isRecord(settings.env)) {
+        const filtered = Object.fromEntries(
+          Object.entries(settings.env).filter(([key]) => allowedKeys.has(key)),
+        );
+        if (Object.keys(filtered).length > 0) {
+          addEnvironmentValues(values, filtered, { kind: "settings-file", path: settingsPath });
+          values.sources.push({ kind: "settings-file", path: settingsPath });
+        }
+      }
+      const model = stringValue(settings.model);
+      if (model) {
+        values.model ??= model;
         values.sources.push({ kind: "settings-file", path: settingsPath });
       }
+    } catch (error) {
+      values.unreadable = true;
+      values.warnings.push(error instanceof Error ? error.message : String(error));
     }
-  } catch (error) {
-    values.unreadable = true;
-    values.warnings.push(error instanceof Error ? error.message : String(error));
   }
 
   for (const credentialsPath of [
