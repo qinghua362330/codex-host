@@ -40,6 +40,11 @@ export interface RendererHarnessConfigurationClient {
   saveHarnessConfiguration(
     input: HarnessConfigurationSaveParams,
   ): Promise<HarnessConfigurationSaveResult>;
+  importLocalHarnessConfiguration?(input: {
+    harnessId: HarnessConfigurationSaveParams["harnessId"];
+    profileId?: string;
+    label?: string;
+  }): Promise<HarnessConfigurationSaveResult>;
 }
 
 interface PageCopy {
@@ -76,6 +81,13 @@ interface PageCopy {
   readonly restartRequired: string;
   readonly readOnly: string;
   readonly managedPath: string;
+  readonly nativeTitle: string;
+  readonly nativeDetected: string;
+  readonly nativeNotDetected: string;
+  readonly nativeSources: string;
+  readonly nativeImport: string;
+  readonly nativeImporting: string;
+  readonly nativeProfileLabel: string;
   readonly authLabels: Readonly<Record<HarnessAuthenticationType, string>>;
 }
 
@@ -115,6 +127,13 @@ const PAGE_COPY: Readonly<Record<RendererSettingsMessages["locale"], PageCopy>> 
     restartRequired: "Restart codexhost to apply this configuration.",
     readOnly: "This configuration source is read-only.",
     managedPath: "Configuration file",
+    nativeTitle: "Native local configuration",
+    nativeDetected: "Detected from the local Harness environment",
+    nativeNotDetected: "No local Harness configuration detected",
+    nativeSources: "Sources",
+    nativeImport: "Import as CodexHost profile",
+    nativeImporting: "Importing...",
+    nativeProfileLabel: "Local Harness configuration",
     authLabels: {
       none: "Not configured",
       oauth: "OAuth",
@@ -157,6 +176,13 @@ const PAGE_COPY: Readonly<Record<RendererSettingsMessages["locale"], PageCopy>> 
     restartRequired: "请重启 codexhost 以应用此配置。",
     readOnly: "当前配置来源为只读。",
     managedPath: "配置文件",
+    nativeTitle: "本地原生配置",
+    nativeDetected: "已检测到本机 Harness 配置",
+    nativeNotDetected: "未检测到本机 Harness 配置",
+    nativeSources: "配置来源",
+    nativeImport: "导入为 CodexHost 配置",
+    nativeImporting: "正在导入...",
+    nativeProfileLabel: "本地 Harness 配置",
     authLabels: {
       none: "未配置",
       oauth: "OAuth",
@@ -472,6 +498,75 @@ export function createHarnessConfigurationSettingsPage(
           const fields = document.createElement("div");
           fields.className = "settings-harness-fields";
           const status = createStatus(document);
+          const native = entry.native;
+          const nativeCard = document.createElement("section");
+          nativeCard.className = "settings-harness-native-card";
+          const nativeHeading = document.createElement("strong");
+          nativeHeading.textContent = copy.nativeTitle;
+          nativeCard.append(nativeHeading);
+          const nativeDescription = document.createElement("p");
+          nativeDescription.textContent =
+            native?.status === "detected" ? copy.nativeDetected : copy.nativeNotDetected;
+          nativeCard.append(nativeDescription);
+          if (native?.status === "detected") {
+            const nativeDetails = document.createElement("div");
+            nativeDetails.className = "settings-harness-native-details";
+            const appendNativeDetail = (label: string, value: string | undefined): void => {
+              if (!value) return;
+              const detail = document.createElement("span");
+              detail.textContent = `${label}: ${value}`;
+              nativeDetails.append(detail);
+            };
+            appendNativeDetail(copy.authentication, copy.authLabels[native.authType]);
+            appendNativeDetail(copy.baseUrl, native.baseUrl);
+            appendNativeDetail(copy.model, native.model);
+            if (native.apiKeyConfigured) {
+              appendNativeDetail(copy.apiKey, native.apiKeyHint ?? copy.apiKeyConfigured);
+            }
+            if (native.sources.length > 0) {
+              appendNativeDetail(
+                copy.nativeSources,
+                native.sources
+                  .map((source) => source.path ?? source.kind)
+                  .join(", "),
+              );
+            }
+            nativeCard.append(nativeDetails);
+            const importLocal = document.createElement("button");
+            importLocal.type = "button";
+            importLocal.className =
+              "settings-command-button settings-command-button--secondary settings-harness-native-import";
+            importLocal.textContent = copy.nativeImport;
+            importLocal.disabled = !snapshot.writable;
+            importLocal.addEventListener("click", () => {
+              const client = getClient();
+              const importLocalConfiguration = client?.importLocalHarnessConfiguration;
+              if (!importLocalConfiguration) {
+                status.textContent = copy.unavailable;
+                return;
+              }
+              importLocal.disabled = true;
+              status.textContent = copy.nativeImporting;
+              void context.runLatest(
+                () =>
+                  importLocalConfiguration({
+                    harnessId: harnessIdSchema.parse(harnessId),
+                    profileId: "native",
+                    label: copy.nativeProfileLabel,
+                  }),
+                {
+                  success(result) {
+                    renderSnapshot(result.snapshot, harnessId, copy.saved);
+                  },
+                  failure() {
+                    importLocal.disabled = false;
+                    status.textContent = copy.unavailable;
+                  },
+                },
+              );
+            });
+            nativeCard.append(importLocal);
+          }
 
           const renderProfile = (): void => {
             fields.replaceChildren();
@@ -688,7 +783,7 @@ export function createHarnessConfigurationSettingsPage(
           submit.className = "settings-command-button settings-harness-save";
           submit.textContent = copy.save;
           submit.disabled = !snapshot.writable;
-          form.append(header, profileControl, fields, status, submit);
+          form.append(header, nativeCard, profileControl, fields, status, submit);
           if (!snapshot.writable) status.textContent = copy.readOnly;
           editor.append(form);
           renderProfile();
@@ -717,6 +812,11 @@ export function createHarnessConfigurationSettingsPage(
           const authLabel = document.createElement("small");
           authLabel.textContent = copy.authLabels[active?.authType ?? "none"];
           state.append(stateLabel, authLabel);
+          if (entry.native?.status === "detected") {
+            const nativeLabel = document.createElement("small");
+            nativeLabel.textContent = `↳ ${copy.nativeDetected}`;
+            state.append(nativeLabel);
+          }
           row.append(identity, state);
           row.addEventListener("click", () => renderEditor(harnessId));
           list.append(row);

@@ -68,7 +68,9 @@ codexhost
 
 ### Harness 配置管理
 
-在 codexhost Settings 的 **Harness 配置** 页面中，可以为 Gemini、Claude Code、Grok、DeepSeek Harness、Pi 和 Oh My Pi 分别维护启用状态与多个 Profile。API Key 只会以脱敏状态显示；保存后的配置在重启 codexhost 后应用到新启动的原生 Harness 进程。
+在 codexhost Settings 的 **Harness 配置** 页面中，可以为 Gemini、Claude Code、Grok、DeepSeek Harness、Pi 和 Oh My Pi 分别维护启用状态与多个 Profile。页面加载时还会读取当前用户环境以及 Claude Code 的本机配置文件，并以脱敏摘要显示已发现的认证方式、Base URL、模型、变量名和来源路径；原始 API Key 不会通过 UI 返回。点击 **导入为 CodexHost 配置** 后，才会把本机值复制到 CodexHost 自己的 Profile，不会修改 Claude Code 原生文件。
+
+API Key 只会以脱敏状态显示；保存或导入后的配置需要重启 codexhost，才会应用到新启动的原生 Harness 进程。未检测到本机配置时，页面会显示“未检测到本机 Harness 配置”。
 
 默认配置文件为 `~/.codexhost/harnesses.json`，也可以用 `CODEXHOST_HARNESS_CONFIG` 指向其他文件。Settings 写入 v2 Profile 格式，并继续兼容读取已有的 v1 文件：
 

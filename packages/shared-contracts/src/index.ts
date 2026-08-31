@@ -110,9 +110,11 @@ export {
   harnessConfigurationInspectParamsSchema,
   harnessConfigurationProfileInputSchema,
   harnessConfigurationProfileSummarySchema,
+  harnessConfigurationImportLocalParamsSchema,
   harnessConfigurationSaveParamsSchema,
   harnessConfigurationSaveResultSchema,
   harnessConfigurationSnapshotSchema,
+  harnessNativeConfigurationSummarySchema,
 } from "./harness-configurations.js";
 export type {
   HarnessAuthenticationType,
@@ -120,9 +122,11 @@ export type {
   HarnessConfigurationInspectParams,
   HarnessConfigurationProfileInput,
   HarnessConfigurationProfileSummary,
+  HarnessConfigurationImportLocalParams,
   HarnessConfigurationSaveParams,
   HarnessConfigurationSaveResult,
   HarnessConfigurationSnapshot,
+  HarnessNativeConfigurationSummary,
 } from "./harness-configurations.js";
 export {
   jsonRpcEnvelopeSchema,

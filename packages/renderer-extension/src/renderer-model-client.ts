@@ -3,6 +3,7 @@ import {
   externalThreadForkResultSchema,
   harnessCommandCatalogSchema,
   harnessConfigurationInspectParamsSchema,
+  harnessConfigurationImportLocalParamsSchema,
   harnessConfigurationSaveParamsSchema,
   harnessConfigurationSaveResultSchema,
   harnessConfigurationSnapshotSchema,
@@ -31,6 +32,7 @@ import {
   type ExternalThreadForkResult,
   type HarnessCommandCatalog,
   type HarnessConfigurationInspectParams,
+  type HarnessConfigurationImportLocalParams,
   type HarnessConfigurationSaveParams,
   type HarnessConfigurationSaveResult,
   type HarnessConfigurationSnapshot,
@@ -58,6 +60,8 @@ import {
 export const HARNESS_INSPECT_METHOD = "codexhost/harness/inspect";
 export const HARNESS_CONFIGURATION_INSPECT_METHOD = "codexhost/harness/configuration/inspect";
 export const HARNESS_CONFIGURATION_SAVE_METHOD = "codexhost/harness/configuration/save";
+export const HARNESS_CONFIGURATION_IMPORT_LOCAL_METHOD =
+  "codexhost/harness/configuration/import-local";
 export const THREAD_FORK_METHOD = "codexhost/thread/fork";
 export const THREAD_INSPECT_METHOD = "codexhost/thread/inspect";
 export const THREAD_COMMANDS_INSPECT_METHOD = "codexhost/thread/commands/inspect";
@@ -116,6 +120,9 @@ export interface RendererModelClient {
   ): Promise<HarnessConfigurationSnapshot>;
   saveHarnessConfiguration(
     input: HarnessConfigurationSaveParams,
+  ): Promise<HarnessConfigurationSaveResult>;
+  importLocalHarnessConfiguration?(
+    input: HarnessConfigurationImportLocalParams,
   ): Promise<HarnessConfigurationSaveResult>;
   inspectThread(input: ThreadInspectionParams): Promise<ThreadInspection>;
   inspectThreadCommands(input: ThreadCommandsInspectParams): Promise<HarnessCommandCatalog>;
@@ -249,6 +256,13 @@ export function createRendererModelClient(
     ): Promise<HarnessConfigurationSaveResult> {
       const params = harnessConfigurationSaveParamsSchema.parse(input);
       const result = await manager.sendRequest(HARNESS_CONFIGURATION_SAVE_METHOD, params);
+      return harnessConfigurationSaveResultSchema.parse(result);
+    },
+    async importLocalHarnessConfiguration(
+      input: HarnessConfigurationImportLocalParams,
+    ): Promise<HarnessConfigurationSaveResult> {
+      const params = harnessConfigurationImportLocalParamsSchema.parse(input);
+      const result = await manager.sendRequest(HARNESS_CONFIGURATION_IMPORT_LOCAL_METHOD, params);
       return harnessConfigurationSaveResultSchema.parse(result);
     },
     async inspectThread(input: ThreadInspectionParams): Promise<ThreadInspection> {

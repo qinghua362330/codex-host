@@ -29,6 +29,7 @@ import {
   harnessInspectParamsSchema,
   harnessConfigurationStateSchema,
   harnessConfigurationInspectParamsSchema,
+  harnessConfigurationImportLocalParamsSchema,
   harnessConfigurationSaveParamsSchema,
   harnessConfigurationSaveResultSchema,
   harnessConfigurationSnapshotSchema,
@@ -653,6 +654,10 @@ export class AppServerHost {
       }
       if (request.method === "codexhost/harness/configuration/save") {
         this.#dispatchDesktopRequest(() => this.#saveHarnessConfiguration(request));
+        continue;
+      }
+      if (request.method === "codexhost/harness/configuration/import-local") {
+        this.#dispatchDesktopRequest(() => this.#importLocalHarnessConfiguration(request));
         continue;
       }
       if (request.method === "codexhost/thread/fork") {
@@ -1722,6 +1727,27 @@ export class AppServerHost {
     } catch (error) {
       await this.#writer.json(
         rpcError(request, -32093, `Harness configuration save failed: ${errorMessage(error)}`),
+      );
+    }
+  }
+
+  async #importLocalHarnessConfiguration(request: JsonRpcRequest): Promise<void> {
+    const params = harnessConfigurationImportLocalParamsSchema.safeParse(request.params);
+    if (!params.success) {
+      await this.#writer.json(rpcError(request, -32602, "Invalid local Harness import params"));
+      return;
+    }
+    try {
+      if (!this.#harnessConfigurationStore.importLocal) {
+        throw new Error("This Host does not support importing local Harness configuration");
+      }
+      const result = harnessConfigurationSaveResultSchema.parse(
+        await this.#harnessConfigurationStore.importLocal(params.data),
+      );
+      await this.#writer.json(rpcEnvelope(request, { result: jsonValueSchema.parse(result) }));
+    } catch (error) {
+      await this.#writer.json(
+        rpcError(request, -32094, `Local Harness configuration import failed: ${errorMessage(error)}`),
       );
     }
   }

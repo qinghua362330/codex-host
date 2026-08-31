@@ -7,6 +7,10 @@ export {
   resolveHarnessConfigurationPath,
   type HarnessConfigurationStore,
 } from "./store.js";
+export {
+  discoverNativeHarnessConfiguration,
+  type NativeHarnessConfigurationDiscovery,
+} from "./native-discovery.js";
 
 const envName = z
   .string()

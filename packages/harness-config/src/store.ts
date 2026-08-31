@@ -10,11 +10,14 @@ import {
   harnessIdSchema,
   type HarnessAuthenticationType,
   type HarnessConfigurationEntrySummary,
+  harnessConfigurationImportLocalParamsSchema,
+  type HarnessConfigurationImportLocalParams,
   type HarnessConfigurationProfileInput,
   type HarnessConfigurationProfileSummary,
   type HarnessConfigurationSaveParams,
   type HarnessConfigurationSaveResult,
   type HarnessConfigurationSnapshot,
+  type HarnessNativeConfigurationSummary,
 } from "@codexhost/shared-contracts";
 
 import {
@@ -26,6 +29,7 @@ import {
   type HarnessProfileConfig,
   type HarnessProfileSet,
 } from "./index.js";
+import { discoverNativeHarnessConfiguration } from "./native-discovery.js";
 
 export const HARNESS_CONFIG_PATH_ENV = "CODEXHOST_HARNESS_CONFIG";
 const DATA_DIRECTORY_ENV = "CODEXHOST_DATA_DIR";
@@ -41,6 +45,7 @@ const DEFAULT_HARNESS_IDS = [
 export interface HarnessConfigurationStore {
   inspect(): Promise<HarnessConfigurationSnapshot>;
   save(input: HarnessConfigurationSaveParams): Promise<HarnessConfigurationSaveResult>;
+  importLocal?(input: HarnessConfigurationImportLocalParams): Promise<HarnessConfigurationSaveResult>;
 }
 
 export function resolveHarnessConfigurationPath(environment: NodeJS.ProcessEnv): string {
@@ -114,6 +119,7 @@ function toV2(config: HarnessConfigFile | null): HarnessConfigFileV2 {
 function entrySummary(
   harnessId: string,
   entry?: HarnessProfileSet,
+  native?: HarnessNativeConfigurationSummary,
 ): HarnessConfigurationEntrySummary {
   const resolved = entry ?? {
     enabled: false,
@@ -125,6 +131,7 @@ function entrySummary(
     enabled: resolved.enabled,
     activeProfileId: resolved.activeProfile,
     profiles: Object.entries(resolved.profiles).map(([id, profile]) => profileSummary(id, profile)),
+    ...(native ? { native } : {}),
   };
 }
 
@@ -183,10 +190,12 @@ export class FileHarnessConfigurationStore implements HarnessConfigurationStore 
   readonly #path: string;
   readonly #source: "managed" | "environment";
   readonly #harnessIds: readonly string[];
+  readonly #environment: NodeJS.ProcessEnv;
   #restartRequired = false;
 
   constructor(input: { environment: NodeJS.ProcessEnv; harnessIds?: readonly string[] }) {
     this.#path = resolveHarnessConfigurationPath(input.environment);
+    this.#environment = { ...input.environment };
     this.#source = input.environment[HARNESS_CONFIG_PATH_ENV] ? "environment" : "managed";
     this.#harnessIds = input.harnessIds ?? DEFAULT_HARNESS_IDS;
   }
@@ -200,14 +209,18 @@ export class FileHarnessConfigurationStore implements HarnessConfigurationStore 
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "ENOENT") writable = false;
     }
+    const harnesses = await Promise.all(
+      harnessIds.map(async (harnessId) => {
+        const native = await discoverNativeHarnessConfiguration(harnessId, this.#environment);
+        return entrySummary(harnessId, config.harnesses[harnessId], native.summary);
+      }),
+    );
     return harnessConfigurationSnapshotSchema.parse({
       path: this.#path,
       source: this.#source,
       writable,
       restartRequired: this.#restartRequired,
-      harnesses: harnessIds.map((harnessId) =>
-        entrySummary(harnessId, config.harnesses[harnessId]),
-      ),
+      harnesses,
     });
   }
 
@@ -224,6 +237,38 @@ export class FileHarnessConfigurationStore implements HarnessConfigurationStore 
           profileFromInput(profile, previous?.profiles[profile.id]),
         ]),
       ),
+    };
+    await writeConfiguration(this.#path, harnessConfigFileV2Schema.parse(config));
+    this.#restartRequired = true;
+    return { snapshot: await this.inspect() };
+  }
+
+  async importLocal(
+    input: HarnessConfigurationImportLocalParams,
+  ): Promise<HarnessConfigurationSaveResult> {
+    const parsed = harnessConfigurationImportLocalParamsSchema.parse(input);
+    const discovered = await discoverNativeHarnessConfiguration(
+      parsed.harnessId,
+      this.#environment,
+    );
+    if (discovered.summary.status !== "detected") {
+      throw new Error(`No local ${parsed.harnessId} Harness configuration was detected`);
+    }
+    const config = toV2(await readConfiguration(this.#path));
+    const previous = config.harnesses[parsed.harnessId];
+    const profileId = parsed.profileId ?? "native";
+    const profile: HarnessProfileConfig = {
+      label: parsed.label ?? "Local Harness configuration",
+      authType: discovered.summary.authType,
+      ...(discovered.endpoint ?? {}),
+    };
+    config.harnesses[parsed.harnessId] = {
+      enabled: true,
+      activeProfile: profileId,
+      profiles: {
+        ...(previous?.profiles ?? {}),
+        [profileId]: profile,
+      },
     };
     await writeConfiguration(this.#path, harnessConfigFileV2Schema.parse(config));
     this.#restartRequired = true;

@@ -36,12 +36,35 @@ export const harnessConfigurationProfileSummarySchema = z
   })
   .strict();
 
+const harnessNativeConfigurationSourceSchema = z
+  .object({
+    kind: z.enum(["environment", "settings-file", "oauth-file"]),
+    path: nonBlankTextSchema.optional(),
+  })
+  .strict();
+
+export const harnessNativeConfigurationSummarySchema = z
+  .object({
+    status: z.enum(["detected", "not-found", "unreadable"]),
+    authType: harnessAuthenticationTypeSchema,
+    baseUrl: z.string().url().optional(),
+    apiKeyConfigured: z.boolean(),
+    apiKeyHint: z.string().max(32).optional(),
+    apiKeyEnv: environmentNameSchema.optional(),
+    model: nonBlankTextSchema.max(512).optional(),
+    environmentKeys: z.array(environmentNameSchema).max(200),
+    sources: z.array(harnessNativeConfigurationSourceSchema).max(20),
+    warnings: z.array(nonBlankTextSchema.max(512)).max(20),
+  })
+  .strict();
+
 export const harnessConfigurationEntrySummarySchema = z
   .object({
     harnessId: harnessIdSchema,
     enabled: z.boolean(),
     activeProfileId: profileIdSchema,
     profiles: z.array(harnessConfigurationProfileSummarySchema).min(1).max(50),
+    native: harnessNativeConfigurationSummarySchema.optional(),
   })
   .strict();
 
@@ -125,9 +148,20 @@ export const harnessConfigurationSaveResultSchema = z
   })
   .strict();
 
+export const harnessConfigurationImportLocalParamsSchema = z
+  .object({
+    harnessId: harnessIdSchema,
+    profileId: profileIdSchema.optional(),
+    label: nonBlankTextSchema.max(128).optional(),
+  })
+  .strict();
+
 export type HarnessAuthenticationType = z.infer<typeof harnessAuthenticationTypeSchema>;
 export type HarnessConfigurationProfileSummary = z.infer<
   typeof harnessConfigurationProfileSummarySchema
+>;
+export type HarnessNativeConfigurationSummary = z.infer<
+  typeof harnessNativeConfigurationSummarySchema
 >;
 export type HarnessConfigurationEntrySummary = z.infer<
   typeof harnessConfigurationEntrySummarySchema
@@ -141,3 +175,6 @@ export type HarnessConfigurationProfileInput = z.infer<
 >;
 export type HarnessConfigurationSaveParams = z.infer<typeof harnessConfigurationSaveParamsSchema>;
 export type HarnessConfigurationSaveResult = z.infer<typeof harnessConfigurationSaveResultSchema>;
+export type HarnessConfigurationImportLocalParams = z.infer<
+  typeof harnessConfigurationImportLocalParamsSchema
+>;
