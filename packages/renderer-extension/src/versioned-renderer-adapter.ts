@@ -6,6 +6,7 @@ import {
   type ExternalThreadForkParams,
   type HarnessInspectParams,
   type HarnessConfigurationInspectParams,
+  type HarnessConfigurationImportLocalParams,
   type HarnessConfigurationSaveParams,
   type HarnessModelRef,
   type HarnessPermissionModeId,
@@ -924,6 +925,13 @@ export function installCurrentRendererAdapter(): {
     inspectHarness: (input: HarnessInspectParams) => currentModelClient().inspectHarness(input),
     inspectHarnessConfiguration: (input: HarnessConfigurationInspectParams) =>
       currentModelClient().inspectHarnessConfiguration(input),
+    importLocalHarnessConfiguration: (input: HarnessConfigurationImportLocalParams) => {
+      const client = currentModelClient();
+      if (!client.importLocalHarnessConfiguration) {
+        throw new Error("Harness configuration import is unavailable");
+      }
+      return client.importLocalHarnessConfiguration(input);
+    },
     saveHarnessConfiguration: (input: HarnessConfigurationSaveParams) =>
       currentModelClient().saveHarnessConfiguration(input),
     inspectThread: (input: ThreadInspectionParams) => currentModelClient().inspectThread(input),
