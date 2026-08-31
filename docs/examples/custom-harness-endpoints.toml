@@ -9,7 +9,7 @@ base_url = "https://gateway.example.com/gemini"
 api_key_env = "GEMINI_API_KEY"
 
 [harnesses.chatglm]
-enabled = true
+enabled = false
 command = "chatglm-harness"
 default_model = "glm-4.5"
 

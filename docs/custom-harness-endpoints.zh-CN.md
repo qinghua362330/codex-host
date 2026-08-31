@@ -1,6 +1,16 @@
-# 自定义 Harness Endpoint 配置（设计草案）
+# 自定义 Harness Endpoint 配置
 
 本功能为每个 Harness 独立配置 endpoint、凭据引用和默认模型，同时保持实际 Turn、工具、审批、历史和命令调用由原生 Harness 执行。
+
+## 当前原生入口
+
+### Gemini CLI
+
+Gemini CLI 当前提供 ACP 模式（`gemini --acp`），通过 stdio 上的 JSON-RPC 进行 `initialize`、`newSession`、`loadSession`、`prompt`、`cancel` 和模型切换。Adapter 应使用该 ACP 通道，而不是解析普通终端文本。Gemini 的 endpoint 可通过 `GOOGLE_GEMINI_BASE_URL` 注入，模型可通过 `GEMINI_MODEL` 或 ACP 会话模型设置注入。
+
+### ChatGLM
+
+ChatGLM 目前没有在本项目中确认到由 Z.ai/智谱官方维护、协议稳定且可用于 CodexHost 原生会话投影的独立 Harness。ChatGLM Adapter 必须绑定一个明确的本地 Harness 命令和协议；在协议确认前不得把 ChatGLM API 直接包装成“原生 Harness”。
 
 ## 配置边界
 
@@ -25,7 +35,7 @@ api_key_env = "GEMINI_API_KEY"
 allow = ["gemini-2.5-pro", "gemini-2.5-flash"]
 
 [harnesses.chatglm]
-enabled = true
+enabled = false
 command = "chatglm-harness"
 default_model = "glm-4.5"
 
@@ -35,15 +45,3 @@ api_key_env = "CHATGLM_API_KEY"
 ```
 
 Adapter 必须将 endpoint 配置转换为目标 Harness 原生支持的启动参数或环境变量；Host 不得自行拼接模型 API 请求。
-
-## 能力来源
-
-模型目录中的工具、推理、图片、原生命令等能力必须标记为 `native`、`adapter` 或 `unsupported`。只有目标 Harness 原生声明或 Adapter 明确实现的能力才可暴露。
-
-## 实现顺序
-
-1. 添加配置 schema、加载和脱敏读取 API。
-2. 将配置注入 Adapter inspection/session factory。
-3. 为 Gemini 和 ChatGLM 增加原生 Adapter。
-4. Renderer 增加 endpoint/model 设置页。
-5. 为 resume、endpoint 隔离、密钥脱敏和能力目录增加测试。
