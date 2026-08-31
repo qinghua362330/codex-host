@@ -9,5 +9,7 @@ build/
 coverage/
 playwright-report/
 test-results/
+# Generated standalone preview page; keep its bundled/minified layout stable.
+packages/renderer-extension/src/settings/windows-update.preview.html
 package-lock.json
 Cargo.lock
