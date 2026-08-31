@@ -18,14 +18,14 @@ import { hostReleaseTarget, npmReleaseUsage, releaseTargetForHost } from "./targ
 
 const repositoryRoot = path.resolve(import.meta.dirname, "../..");
 
-export const NPM_PACKAGE_NAME = "@codexhost/cli";
+export const NPM_PACKAGE_NAME = "@qinghua362330/codexhost-cli";
 export const NPM_PLATFORM_PACKAGE_NAMES = Object.freeze({
-  "macos-arm64": "@codexhost/cli-darwin-arm64",
-  "macos-x64": "@codexhost/cli-darwin-x64",
-  "windows-x64": "@codexhost/cli-win32-x64",
-  "windows-arm64": "@codexhost/cli-win32-arm64",
-  "linux-x64": "@codexhost/cli-linux-x64",
-  "linux-arm64": "@codexhost/cli-linux-arm64",
+  "macos-arm64": "@qinghua362330/codexhost-cli-darwin-arm64",
+  "macos-x64": "@qinghua362330/codexhost-cli-darwin-x64",
+  "windows-x64": "@qinghua362330/codexhost-cli-win32-x64",
+  "windows-arm64": "@qinghua362330/codexhost-cli-win32-arm64",
+  "linux-x64": "@qinghua362330/codexhost-cli-linux-x64",
+  "linux-arm64": "@qinghua362330/codexhost-cli-linux-arm64",
 });
 export const NPM_RUNTIME_PLATFORM_PACKAGES = Object.freeze({
   "darwin-arm64": NPM_PLATFORM_PACKAGE_NAMES["macos-arm64"],
@@ -225,12 +225,12 @@ export function createNpmPackageManifest({ version, target }) {
     keywords: ["codex", "codexhost", "pi", "claude-code", "agent", "harness"],
     repository: {
       type: "git",
-      url: "git+https://github.com/BytePioneer-AI/codex-host.git",
+      url: "git+https://github.com/qinghua362330/codex-host.git",
     },
     bugs: {
-      url: "https://github.com/BytePioneer-AI/codex-host/issues",
+      url: "https://github.com/qinghua362330/codex-host/issues",
     },
-    homepage: "https://github.com/BytePioneer-AI/codex-host#readme",
+    homepage: "https://github.com/qinghua362330/codex-host#readme",
     publishConfig: {
       access: "public",
     },

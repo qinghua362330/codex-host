@@ -32,10 +32,10 @@ export function createNpmMetaPackageManifest({ version }) {
     keywords: ["codex", "codexhost", "pi", "claude-code", "agent", "harness"],
     repository: {
       type: "git",
-      url: "git+https://github.com/BytePioneer-AI/codex-host.git",
+      url: "git+https://github.com/qinghua362330/codex-host.git",
     },
-    bugs: { url: "https://github.com/BytePioneer-AI/codex-host/issues" },
-    homepage: "https://github.com/BytePioneer-AI/codex-host#readme",
+    bugs: { url: "https://github.com/qinghua362330/codex-host/issues" },
+    homepage: "https://github.com/qinghua362330/codex-host#readme",
     publishConfig: { access: "public" },
   };
 }

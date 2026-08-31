@@ -41,7 +41,8 @@ import {
 
 export const CODEXHOST_GITHUB_REPOSITORY_URL = "https://github.com/BytePioneer-AI/codex-host";
 export const CODEXHOST_RELEASES_LATEST_URL = `${CODEXHOST_GITHUB_REPOSITORY_URL}/releases/latest`;
-export const CODEXHOST_NPM_MANUAL_UPDATE_COMMAND = "npm install -g @codexhost/cli@latest";
+export const CODEXHOST_NPM_MANUAL_UPDATE_COMMAND =
+  "npm install -g @qinghua362330/codexhost-cli@latest";
 
 interface RendererUserAgentData {
   readonly platform?: string;

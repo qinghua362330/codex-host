@@ -58,7 +58,7 @@ https://github.com/user-attachments/assets/c48192d7-23ff-4f6e-b61a-6345a655bb76
 > Supports macOS, Windows, and [x64/ARM64 Linux](linux.md).
 
 ```bash
-npm install -g @codexhost/cli
+npm install -g @qinghua362330/codexhost-cli
 codexhost
 ```
 
@@ -175,7 +175,7 @@ Connect to and control Harnesses on other development nodes over SSH through Cod
 Run this on the SSH remote host:
 
 ```bash
-npm install -g @codexhost/cli
+npm install -g @qinghua362330/codexhost-cli
 codexhost remote install
 codexhost remote start
 codexhost remote status

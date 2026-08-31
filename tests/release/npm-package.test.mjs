@@ -104,15 +104,15 @@ async function createHomebrewNodeLayout(root) {
 async function createGlobalCodexhostInstall(prefix) {
   const platformPackage =
     process.platform === "win32"
-      ? `@codexhost/cli-win32-${process.arch}`
-      : `@codexhost/cli-darwin-${process.arch}`;
+      ? `@qinghua362330/codexhost-cli-win32-${process.arch}`
+      : `@qinghua362330/codexhost-cli-darwin-${process.arch}`;
   const packageRoot = path.join(prefix, "lib", "node_modules", platformPackage);
   const launcherPath = path.join(
     prefix,
     "lib",
     "node_modules",
-    "@codexhost",
-    "cli",
+    "@qinghua362330",
+    "codexhost-cli",
     "bin",
     "codexhost.js",
   );
@@ -168,8 +168,15 @@ async function createNpmMetaPackageFixture(root) {
 }
 
 async function createLauncherLifecycleFixture(root, platform) {
-  const launcherPath = path.join(root, "node_modules", "@codexhost", "cli", "bin", "codexhost.js");
-  const platformPackage = `@codexhost/cli-${platform}-x64`;
+  const launcherPath = path.join(
+    root,
+    "node_modules",
+    "@qinghua362330",
+    "codexhost-cli",
+    "bin",
+    "codexhost.js",
+  );
+  const platformPackage = `@qinghua362330/codexhost-cli-${platform}-x64`;
   const platformRoot = path.join(root, "node_modules", ...platformPackage.split("/"));
   const executableSuffix = platform === "win32" ? ".exe" : "";
   const npmCliPath = path.join(root, "npm-cli.js");
@@ -320,7 +327,7 @@ describe("npm package release", () => {
   it("publishes a scoped platform package with platform constraints", () => {
     const target = releaseTarget("macos-arm64");
     const manifest = createNpmPackageManifest({ version: "0.1.0", target });
-    expect(manifest.name).toBe("@codexhost/cli-darwin-arm64");
+    expect(manifest.name).toBe("@qinghua362330/codexhost-cli-darwin-arm64");
     expect(npmPlatformPackageName(target)).toBe(manifest.name);
     expect(manifest.private).toBeUndefined();
     expect(manifest.bin).toBeUndefined();
@@ -351,9 +358,9 @@ describe("npm package release", () => {
 
   it("injects package resources when the user runs codexhost with no args", () => {
     const source = createNpmBinLauncherSource({ version: "0.1.0" });
-    expect(source).toContain('"darwin-arm64": "@codexhost/cli-darwin-arm64"');
-    expect(source).toContain('"linux-x64": "@codexhost/cli-linux-x64"');
-    expect(source).toContain('"linux-arm64": "@codexhost/cli-linux-arm64"');
+    expect(source).toContain('"darwin-arm64": "@qinghua362330/codexhost-cli-darwin-arm64"');
+    expect(source).toContain('"linux-x64": "@qinghua362330/codexhost-cli-linux-x64"');
+    expect(source).toContain('"linux-arm64": "@qinghua362330/codexhost-cli-linux-arm64"');
     expect(source).toContain("require.resolve");
     expect(source).toContain("--omit=optional");
     expect(source).toContain('launchArguments = ["launch"]');
@@ -510,19 +517,19 @@ describe("npm package release", () => {
     }
   });
 
-  it("keeps all published package names under the codexhost npm org", async () => {
+  it("keeps all published package names under the fork owner's npm scope", async () => {
     const source = await readFile(
       path.resolve(import.meta.dirname, "../../scripts/release/prepare-npm.mjs"),
       "utf8",
     );
-    expect(source).toContain('NPM_PACKAGE_NAME = "@codexhost/cli"');
+    expect(source).toContain('NPM_PACKAGE_NAME = "@qinghua362330/codexhost-cli"');
     expect(Object.values(NPM_PLATFORM_PACKAGE_NAMES)).toEqual([
-      "@codexhost/cli-darwin-arm64",
-      "@codexhost/cli-darwin-x64",
-      "@codexhost/cli-win32-x64",
-      "@codexhost/cli-win32-arm64",
-      "@codexhost/cli-linux-x64",
-      "@codexhost/cli-linux-arm64",
+      "@qinghua362330/codexhost-cli-darwin-arm64",
+      "@qinghua362330/codexhost-cli-darwin-x64",
+      "@qinghua362330/codexhost-cli-win32-x64",
+      "@qinghua362330/codexhost-cli-win32-arm64",
+      "@qinghua362330/codexhost-cli-linux-x64",
+      "@qinghua362330/codexhost-cli-linux-arm64",
     ]);
     expect(source).toContain("publishConfig");
     expect(source).toContain('access: "public"');

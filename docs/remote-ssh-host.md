@@ -16,7 +16,7 @@ Windows is supported as the client. A Windows machine is not currently supported
 ## Install on the SSH host
 
 ```bash
-npm install -g @codexhost/cli
+npm install -g @qinghua362330/codexhost-cli
 codexhost remote install
 codexhost remote start
 codexhost remote status

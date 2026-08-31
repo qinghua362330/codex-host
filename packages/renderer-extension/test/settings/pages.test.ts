@@ -498,7 +498,9 @@ describe("Renderer Updates page", () => {
     ).toBeUndefined();
     expect(client.startUpdate).not.toHaveBeenCalled();
     if (installation === "npm") {
-      expect(visibleText(content)).toContain("npm install -g @codexhost/cli@latest");
+      expect(visibleText(content)).toContain(
+        "npm install -g @qinghua362330/codexhost-cli@latest",
+      );
     } else {
       const link = descendants(content).find(
         ({ tagName, href }) =>
