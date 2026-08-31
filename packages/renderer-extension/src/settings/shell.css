@@ -1716,6 +1716,27 @@ button {
   opacity: 0.58;
 }
 
+.settings-harness-model-field {
+  display: grid;
+  min-width: 0;
+  gap: 8px;
+}
+
+.settings-harness-model-field > .settings-harness-field {
+  min-width: 0;
+}
+
+.settings-harness-refresh-models {
+  justify-self: start;
+}
+
+.settings-harness-model-status {
+  min-height: 16px;
+  color: var(--settings-muted);
+  font-size: 10px;
+  line-height: 16px;
+}
+
 .settings-harness-advanced {
   padding-top: 4px;
   border-top: 1px solid var(--settings-divider);

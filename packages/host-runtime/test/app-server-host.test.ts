@@ -872,7 +872,7 @@ describe("AppServerHost HarnessAdapter projection", () => {
       expect(saved).toMatchObject({
         result: {
           snapshot: {
-            restartRequired: true,
+            restartRequired: false,
             harnesses: [
               {
                 harnessId: "pi",

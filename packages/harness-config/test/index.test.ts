@@ -247,7 +247,7 @@ describe("harness configuration", () => {
       const serializedSnapshot = JSON.stringify(saved.snapshot);
       expect(serializedSnapshot).not.toContain("managed-secret-abcd");
       expect(serializedSnapshot).not.toContain("hidden-value");
-      expect(saved.snapshot.restartRequired).toBe(true);
+      expect(saved.snapshot.restartRequired).toBe(false);
       expect(saved.snapshot.harnesses[0]?.profiles[0]).toMatchObject({
         apiKeyConfigured: true,
         apiKeyHint: "****abcd",

@@ -239,7 +239,9 @@ export class FileHarnessConfigurationStore implements HarnessConfigurationStore 
       ),
     };
     await writeConfiguration(this.#path, harnessConfigFileV2Schema.parse(config));
-    this.#restartRequired = true;
+    // The Host swaps the affected adapter after the save; existing native sessions
+    // continue on their current process while new sessions use the new profile.
+    this.#restartRequired = false;
     return { snapshot: await this.inspect() };
   }
 
@@ -271,7 +273,7 @@ export class FileHarnessConfigurationStore implements HarnessConfigurationStore 
       },
     };
     await writeConfiguration(this.#path, harnessConfigFileV2Schema.parse(config));
-    this.#restartRequired = true;
+    this.#restartRequired = false;
     return { snapshot: await this.inspect() };
   }
 }

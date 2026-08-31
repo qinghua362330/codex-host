@@ -62,6 +62,7 @@ import {
   type HostTurnId,
 } from "@codexhost/shared-contracts";
 import { executeExternalThreadFork } from "./external-thread-fork.js";
+import { createExternalHarnessAdapters } from "./adapter-composition.js";
 import {
   ExternalHistoryRequestError,
   listExternalItems,
@@ -443,6 +444,7 @@ export class AppServerHost {
     AppServerHostOptions;
   #official: OfficialAppServerConnection | null = null;
   #externalAdapters: Map<ExternalHarnessId, HarnessAdapter>;
+  readonly #retiredExternalAdapters = new Set<HarnessAdapter>();
   #externalRuntime: ExternalThreadRuntime;
   #harnessConfigurationStore: HarnessConfigurationStore;
   #repository: ExternalThreadRepository;
@@ -564,7 +566,7 @@ export class AppServerHost {
     } catch (error) {
       this.#diagnose(`Official app-server connection failed: ${errorMessage(error)}`);
       await Promise.allSettled(
-        [...new Set(this.#externalAdapters.values())].map((adapter) => adapter.close()),
+        [...new Set([...this.#externalAdapters.values(), ...this.#retiredExternalAdapters])].map((adapter) => adapter.close()),
       );
       if (this.#options.closeMappingStoreOnExit !== false) {
         await this.#repository.close().catch((closeError) => this.#diagnose(closeError));
@@ -594,7 +596,7 @@ export class AppServerHost {
       await Promise.allSettled(threads.map(({ session }) => session.close()));
       await Promise.allSettled(threads.map(({ outputTask }) => outputTask));
       await Promise.allSettled(
-        [...new Set(this.#externalAdapters.values())].map((adapter) => adapter.close()),
+        [...new Set([...this.#externalAdapters.values(), ...this.#retiredExternalAdapters])].map((adapter) => adapter.close()),
       );
       for (const pending of [...this.#pendingDesktopApprovals.values()]) {
         await this.#resolveDesktopApproval(pending.interaction.interactionId).catch(
@@ -1723,6 +1725,7 @@ export class AppServerHost {
       const result = harnessConfigurationSaveResultSchema.parse(
         await this.#harnessConfigurationStore.save(params.data),
       );
+      await this.#reloadHarnessAdapter(params.data.harnessId as ExternalHarnessId);
       await this.#writer.json(rpcEnvelope(request, { result: jsonValueSchema.parse(result) }));
     } catch (error) {
       await this.#writer.json(
@@ -1744,12 +1747,28 @@ export class AppServerHost {
       const result = harnessConfigurationSaveResultSchema.parse(
         await this.#harnessConfigurationStore.importLocal(params.data),
       );
+      await this.#reloadHarnessAdapter(params.data.harnessId as ExternalHarnessId);
       await this.#writer.json(rpcEnvelope(request, { result: jsonValueSchema.parse(result) }));
     } catch (error) {
       await this.#writer.json(
         rpcError(request, -32094, `Local Harness configuration import failed: ${errorMessage(error)}`),
       );
     }
+  }
+
+  async #reloadHarnessAdapter(harnessId: ExternalHarnessId): Promise<void> {
+    const environment = this.#options.environment ?? process.env;
+    const replacements = createExternalHarnessAdapters(environment);
+    const replacement = replacements.get(harnessId);
+    if (!replacement) return;
+    const previous = this.#externalAdapters.get(harnessId);
+    if (previous && previous !== replacement) this.#retiredExternalAdapters.add(previous);
+    this.#externalAdapters.set(harnessId, replacement);
+    await Promise.allSettled(
+      [...replacements.entries()]
+        .filter(([candidateId]) => candidateId !== harnessId)
+        .map(([, adapter]) => adapter.close()),
+    );
   }
 
   async #inspectThread(request: JsonRpcRequest): Promise<void> {

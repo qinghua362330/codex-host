@@ -8,6 +8,8 @@ import {
   type HarnessConfigurationSaveParams,
   type HarnessConfigurationSaveResult,
   type HarnessConfigurationSnapshot,
+  type HarnessInspectParams,
+  type HarnessInspection,
 } from "@codexhost/shared-contracts";
 
 import type { ExternalRendererAgent } from "../agent-selection-state.js";
@@ -34,6 +36,7 @@ const AUTHENTICATION_TYPES = [
 ] as const satisfies readonly HarnessAuthenticationType[];
 
 export interface RendererHarnessConfigurationClient {
+  inspectHarness?(input: HarnessInspectParams): Promise<HarnessInspection>;
   inspectHarnessConfiguration(
     input: HarnessConfigurationInspectParams,
   ): Promise<HarnessConfigurationSnapshot>;
@@ -88,6 +91,9 @@ interface PageCopy {
   readonly nativeImport: string;
   readonly nativeImporting: string;
   readonly nativeProfileLabel: string;
+  readonly refreshModels: string;
+  readonly loadingModels: string;
+  readonly modelsUnavailable: string;
   readonly authLabels: Readonly<Record<HarnessAuthenticationType, string>>;
 }
 
@@ -124,7 +130,7 @@ const PAGE_COPY: Readonly<Record<RendererSettingsMessages["locale"], PageCopy>> 
     save: "Save configuration",
     saving: "Saving...",
     saved: "Configuration saved.",
-    restartRequired: "Restart codexhost to apply this configuration.",
+    restartRequired: "New Harness sessions use this configuration immediately.",
     readOnly: "This configuration source is read-only.",
     managedPath: "Configuration file",
     nativeTitle: "Native local configuration",
@@ -134,6 +140,9 @@ const PAGE_COPY: Readonly<Record<RendererSettingsMessages["locale"], PageCopy>> 
     nativeImport: "Import as CodexHost profile",
     nativeImporting: "Importing...",
     nativeProfileLabel: "Local Harness configuration",
+    refreshModels: "Refresh models",
+    loadingModels: "Loading models...",
+    modelsUnavailable: "Model list unavailable; enter a model manually.",
     authLabels: {
       none: "Not configured",
       oauth: "OAuth",
@@ -173,7 +182,7 @@ const PAGE_COPY: Readonly<Record<RendererSettingsMessages["locale"], PageCopy>> 
     save: "保存配置",
     saving: "正在保存...",
     saved: "配置已保存。",
-    restartRequired: "请重启 codexhost 以应用此配置。",
+    restartRequired: "新建 Harness 会话会立即使用此配置。",
     readOnly: "当前配置来源为只读。",
     managedPath: "配置文件",
     nativeTitle: "本地原生配置",
@@ -183,6 +192,9 @@ const PAGE_COPY: Readonly<Record<RendererSettingsMessages["locale"], PageCopy>> 
     nativeImport: "导入为 CodexHost 配置",
     nativeImporting: "正在导入...",
     nativeProfileLabel: "本地 Harness 配置",
+    refreshModels: "刷新模型列表",
+    loadingModels: "正在获取模型列表...",
+    modelsUnavailable: "暂时无法获取模型列表，可手动输入模型。",
     authLabels: {
       none: "未配置",
       oauth: "OAuth",
@@ -629,6 +641,54 @@ export function createHarnessConfigurationSettingsPage(
             const model = document.createElement("input");
             model.value = profile.model ?? "";
             model.disabled = !snapshot.writable;
+            model.setAttribute("list", `settings-harness-models-${harnessId}`);
+            const modelSuggestions = document.createElement("datalist");
+            modelSuggestions.id = `settings-harness-models-${harnessId}`;
+            const refreshModels = document.createElement("button");
+            refreshModels.type = "button";
+            refreshModels.className =
+              "settings-command-button settings-command-button--secondary settings-harness-refresh-models";
+            refreshModels.textContent = copy.refreshModels;
+            refreshModels.disabled = !snapshot.writable;
+            const modelStatus = document.createElement("span");
+            modelStatus.className = "settings-harness-model-status";
+            const modelField = document.createElement("div");
+            modelField.className = "settings-harness-model-field";
+            modelField.append(inputField(document, copy.model, model), refreshModels, modelSuggestions, modelStatus);
+            const loadModelCatalog = async (refresh: boolean): Promise<void> => {
+              const inspect = getClient()?.inspectHarness;
+              if (!inspect) return;
+              refreshModels.disabled = true;
+              modelStatus.textContent = copy.loadingModels;
+              try {
+                const inspection = await inspect({
+                  harnessId: harnessIdSchema.parse(harnessId),
+                  refresh,
+                });
+                if (inspection.status !== "ready") {
+                  modelStatus.textContent = copy.modelsUnavailable;
+                  return;
+                }
+                modelSuggestions.replaceChildren(
+                  ...inspection.catalog.models.map((candidate) => {
+                    const option = document.createElement("option");
+                    option.value = candidate.ref.id;
+                    option.label = candidate.label;
+                    return option;
+                  }),
+                );
+                modelStatus.textContent = inspection.catalog.models.length
+                  ? `${inspection.catalog.models.length} ${copy.model}`
+                  : copy.modelsUnavailable;
+              } catch {
+                modelStatus.textContent = copy.modelsUnavailable;
+              } finally {
+                refreshModels.disabled = !snapshot.writable;
+              }
+            };
+            refreshModels.addEventListener("click", () => {
+              void loadModelCatalog(true);
+            });
             const command = document.createElement("input");
             command.value = profile.command ?? "";
             command.disabled = !snapshot.writable;
@@ -715,7 +775,8 @@ export function createHarnessConfigurationSettingsPage(
               authFields,
             );
             if (supportsProfileModelConfiguration(harnessId)) {
-              fields.append(inputField(document, copy.model, model));
+              fields.append(modelField);
+              void loadModelCatalog(false);
             }
             fields.append(advanced);
 
