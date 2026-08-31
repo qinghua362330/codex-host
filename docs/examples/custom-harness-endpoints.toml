@@ -1,0 +1,18 @@
+# Example only. API keys are referenced by environment variable.
+[harnesses.gemini]
+enabled = true
+command = "gemini"
+default_model = "gemini-2.5-pro"
+
+[harnesses.gemini.endpoint]
+base_url = "https://gateway.example.com/gemini"
+api_key_env = "GEMINI_API_KEY"
+
+[harnesses.chatglm]
+enabled = true
+command = "chatglm-harness"
+default_model = "glm-4.5"
+
+[harnesses.chatglm.endpoint]
+base_url = "https://gateway.example.com/glm"
+api_key_env = "CHATGLM_API_KEY"
